@@ -11,6 +11,8 @@ import channelRoutes from './routes/channel.routes';
 import messageRoutes from './routes/message.routes';
 import reactionRoutes from './routes/reaction.routes';
 import uploadRoutes from './routes/upload.routes';
+import botRoutes from './routes/bot.routes';
+import botApiRoutes from './routes/bot-api.routes';
 import pool from './utils/db';
 import { PresenceUtil } from './utils/presence';
 import path from 'path';
@@ -53,6 +55,9 @@ app.get('/health', (req: Request, res: Response) => {
   });
 });
 
+// Store io instance for access in controllers
+app.set('io', io);
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/servers', serverRoutes);
@@ -60,6 +65,8 @@ app.use('/api/channels', channelRoutes);
 app.use('/api', messageRoutes);
 app.use('/api', reactionRoutes);
 app.use('/api', uploadRoutes);
+app.use('/api/bots', botRoutes);
+app.use('/api/bot', botApiRoutes);
 
 // 404 handler
 app.use((req: Request, res: Response) => {
