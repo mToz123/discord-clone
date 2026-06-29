@@ -14,6 +14,8 @@ import uploadRoutes from './routes/upload.routes';
 import botRoutes from './routes/bot.routes';
 import botApiRoutes from './routes/bot-api.routes';
 import dmRoutes from './routes/dm.routes';
+import richContentRoutes from './routes/richContent.routes';
+import roleRoutes from './routes/role.routes';
 import pool from './utils/db';
 import { PresenceUtil } from './utils/presence';
 import path from 'path';
@@ -69,6 +71,8 @@ app.use('/api', uploadRoutes);
 app.use('/api/bots', botRoutes);
 app.use('/api/bot', botApiRoutes);
 app.use('/api/dm', dmRoutes);
+app.use('/api', richContentRoutes);
+app.use('/api', roleRoutes);
 
 // 404 handler
 app.use((req: Request, res: Response) => {

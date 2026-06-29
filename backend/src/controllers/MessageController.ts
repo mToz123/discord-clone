@@ -4,6 +4,8 @@ import { z } from 'zod';
 import { MessageModel } from '../models/Message';
 import { ChannelModel } from '../models/Channel';
 import { ServerModel } from '../models/Server';
+import { MentionModel } from '../models/RichContent';
+import { MentionUtil, LinkPreviewUtil } from '../utils/richContent';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { io } from '../index';
 
@@ -61,6 +63,40 @@ export class MessageController {
           reply_to: data.reply_to,
         }
       );
+
+      // Process mentions (async, don't wait)
+      if (data.content) {
+        const mentions = MentionUtil.parseMentions(data.content);
+        if (mentions.length > 0) {
+          // Get server members to resolve usernames
+          ServerModel.getMembers(channel.server_id).then(async (members) => {
+            const userMap = new Map<string, number>();
+            members.forEach((member: any) => {
+              userMap.set(member.username.toLowerCase(), parseInt(member.id));
+            });
+
+            const mentionedUserIds: number[] = [];
+            mentions.forEach(mention => {
+              const userId = userMap.get(mention.username.toLowerCase());
+              if (userId) mentionedUserIds.push(userId);
+            });
+
+            if (mentionedUserIds.length > 0) {
+              await MentionModel.addMultiple(parseInt(message.id), mentionedUserIds);
+              
+              // Notify mentioned users via Socket.io
+              mentionedUserIds.forEach(userId => {
+                io.to(`user:${userId}`).emit('mention', {
+                  messageId: message.id,
+                  channelId,
+                  serverId: channel.server_id,
+                  author: req.user!.username
+                });
+              });
+            }
+          }).catch(err => console.error('Mention processing error:', err));
+        }
+      }
 
       // Get full message with user data
       const fullMessage = await MessageModel.findById(message.id);

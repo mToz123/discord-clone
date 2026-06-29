@@ -3,6 +3,7 @@ import { Response } from 'express';
 import { z } from 'zod';
 import { ServerModel } from '../models/Server';
 import { ChannelModel } from '../models/Channel';
+import { RoleModel } from '../models/Role';
 import { AuthRequest } from '../middleware/auth.middleware';
 
 // Validation schemas
@@ -36,6 +37,14 @@ export class ServerController {
           description: data.description,
         }
       );
+
+      // Auto-create @everyone role
+      try {
+        await RoleModel.createEveryoneRole(parseInt(server.id));
+      } catch (error) {
+        console.error('Failed to create @everyone role:', error);
+        // Continue even if role creation fails
+      }
 
       return res.status(201).json({ server });
     } catch (error) {
