@@ -13,6 +13,7 @@ import reactionRoutes from './routes/reaction.routes';
 import uploadRoutes from './routes/upload.routes';
 import botRoutes from './routes/bot.routes';
 import botApiRoutes from './routes/bot-api.routes';
+import dmRoutes from './routes/dm.routes';
 import pool from './utils/db';
 import { PresenceUtil } from './utils/presence';
 import path from 'path';
@@ -67,6 +68,7 @@ app.use('/api', reactionRoutes);
 app.use('/api', uploadRoutes);
 app.use('/api/bots', botRoutes);
 app.use('/api/bot', botApiRoutes);
+app.use('/api/dm', dmRoutes);
 
 // 404 handler
 app.use((req: Request, res: Response) => {
@@ -145,6 +147,32 @@ io.on('connection', async (socket) => {
   // Heartbeat to keep connection alive
   socket.on('heartbeat', async () => {
     await PresenceUtil.heartbeat(userId);
+  });
+
+  // DM events
+  socket.on('dm:join', (conversationId: string) => {
+    socket.join(`dm:${conversationId}`);
+    console.log(`User ${username} joined DM: ${conversationId}`);
+  });
+
+  socket.on('dm:leave', (conversationId: string) => {
+    socket.leave(`dm:${conversationId}`);
+    console.log(`User ${username} left DM: ${conversationId}`);
+  });
+
+  socket.on('dm:typing:start', (conversationId: string) => {
+    socket.to(`dm:${conversationId}`).emit('dm:typing:start', {
+      userId,
+      username,
+      conversationId,
+    });
+  });
+
+  socket.on('dm:typing:stop', (conversationId: string) => {
+    socket.to(`dm:${conversationId}`).emit('dm:typing:stop', {
+      userId,
+      conversationId,
+    });
   });
 
   // Disconnect
